@@ -20,7 +20,7 @@ const custom_dir = path.join(home_dir, '/mechvibes_custom');
 const current_pack_store_id = 'mechvibes-pack';
 
 const mute = new StoreToggle("mechvibes-muted", false);
-const start_minimized = new StoreToggle("mechvibes-start-minimized", true);
+const start_minimized = new StoreToggle("mechvibes-start-minimized", true); // tried making it true by default too
 const active_volume = new StoreToggle("mechvibes-active-volume", true);
 
 // Remote debugging defaults
