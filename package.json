@@ -25,8 +25,6 @@
       "electron-87"
     ],
     "platforms": [
-      "win32",
-      "darwin",
       "linux"
     ],
     "arches": [
@@ -39,46 +37,11 @@
       "allowToChangeInstallationDirectory": true,
       "include": "./build/installer.nsh"
     },
-    "win": {
-      "target": [
-        {
-          "target": "nsis",
-          "arch": [
-            "x64"
-          ]
-        }
-      ],
-      "icon": "src/assets/icon.png"
-    },
-    "mac": {
-      "category": "public.app-category.entertainment",
-      "target": [
-        {
-          "target": "dmg",
-          "arch": [
-            "x64"
-          ]
-        }
-      ],
-      "icon": "src/assets/icon.png"
-    },
     "linux": {
       "category": "Utility",
       "target": [
         {
-          "target": "deb",
-          "arch": [
-            "x64"
-          ]
-        },
-        {
-          "target": "snap",
-          "arch": [
-            "x64"
-          ]
-        },
-        {
-          "target": "AppImage",
+          "target": "pacman",
           "arch": [
             "x64"
           ]
