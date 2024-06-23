@@ -20,7 +20,7 @@ const custom_dir = path.join(home_dir, '/mechvibes_custom');
 const current_pack_store_id = 'mechvibes-pack';
 
 const mute = new StoreToggle("mechvibes-muted", false);
-const start_minimized = new StoreToggle("mechvibes-start-minimized", false);
+const start_minimized = new StoreToggle("mechvibes-start-minimized", true);
 const active_volume = new StoreToggle("mechvibes-active-volume", true);
 
 // Remote debugging defaults
@@ -38,11 +38,11 @@ let debug = {
       version: app.getVersion() // v2.3.5
     };
 
-    if(this.identifier === undefined){
+    if (this.identifier === undefined) {
       const json = await IpcServer.identify(userInfo);
-      if(json.success){
+      if (json.success) {
         this.identifier = json.identifier;
-        fs.writeJsonSync(debugConfigFile, {enabled: true, identifier: json.identifier});
+        fs.writeJsonSync(debugConfigFile, { enabled: true, identifier: json.identifier });
         log.transports.remote.client.identifier = this.identifier;
         // TODO: set the level based on what the debugger wants
         // We're going to set the level to silly for now, because we don't have a way to live-update the level,
@@ -58,20 +58,20 @@ let debug = {
           level: log.transports.remote.level,
           identifier: debug.identifier
         };
-        if(debugWindow !== null){
+        if (debugWindow !== null) {
           debugWindow.webContents.send("debug-update", options);
         }
-      }else{
+      } else {
         this.enabled = false;
         console.log(json);
       }
-    }else{
+    } else {
       // TODO: set the level based on what the debugger wants
       console.log("enabling early");
       log.transports.remote.client.identifier = this.identifier;
       log.transports.remote.level = "silly";
       const json = await IpcServer.validate(this.identifier, userInfo);
-      if(!json.success){
+      if (!json.success) {
         console.log("Failed validation");
         log.transports.remote.level = false;
         this.enabled = false;
@@ -79,7 +79,7 @@ let debug = {
         fs.unlinkSync(debugConfigFile);
       }
     }
-    if(win !== null){
+    if (win !== null) {
       win.webContents.send("debug-in-use", true);
     }
   },
@@ -96,7 +96,7 @@ let debug = {
     // https://beta.mechvibes.com/blog/debug-data-retention-policy/
     // transport.clear();
 
-    if(win !== null){
+    if (win !== null) {
       win.webContents.send("debug-in-use", false);
     }
   }
@@ -114,16 +114,16 @@ for (const transportName in log.transports) {
 
 // parse debugging options
 const debugConfigFile = path.join(user_dir, "/remote-debug.json");
-if(fs.existsSync(debugConfigFile)){
+if (fs.existsSync(debugConfigFile)) {
   const json = require(debugConfigFile);
   console.log(json);
-  if(json.identifier){
+  if (json.identifier) {
     debug.identifier = json.identifier;
-    if(json.enabled){
+    if (json.enabled) {
       debug.enable();
       console.log("enabled?");
     }
-  }else{
+  } else {
     fs.unlinkSync(debugConfigFile);
   }
   // log.transports.remote.level = debug.level;
@@ -142,7 +142,7 @@ log.transports.console.format = "%c{h}:{i}:{s}.{ms}%c {sender} › {text}"
 log.transports.file.format = "[{y}-{m}-{d} {h}:{i}:{s}.{ms}] [{level}]({sender}) {text}"
 
 const LogTransportMap = { error: 'red', warn: 'yellow', info: 'cyan', debug: 'magenta', silly: 'green', default: 'unset' };
-log.hooks.push((msg, {transportName}) => {
+log.hooks.push((msg, { transportName }) => {
   if (transportName === 'console') {
     // apply color, only to console transport
     return {
@@ -185,7 +185,7 @@ function createWindow(show = false) {
   });
 
   // remove menu bar
-  win.removeMenu();
+  //win.removeMenu();
 
   // and load the index.html of the app.
   win.loadFile('./src/app.html');
@@ -195,7 +195,7 @@ function createWindow(show = false) {
   // win.webContents.openDevTools();
 
   win.webContents.on("did-finish-load", () => {
-    if(debug.enabled){
+    if (debug.enabled) {
       win.webContents.send("debug-in-use", true);
     }
     win.webContents.send("ava-toggle", active_volume.is_enabled);
@@ -226,6 +226,9 @@ function createWindow(show = false) {
     console.log("unresponsive");
   })
 
+  //NOTE: for some reason this is not working with Hyprland
+
+  start_minimized.is_enabled = true
   // condition for start_minimized
   if (start_minimized.is_enabled) {
     win.close();
@@ -237,7 +240,7 @@ function createWindow(show = false) {
 }
 
 let installer = null;
-function openInstallWindow(packId){
+function openInstallWindow(packId) {
   // Create the browser window.
   installer = new BrowserWindow({
     width: 300,
@@ -279,7 +282,7 @@ function openInstallWindow(packId){
 }
 
 let debugWindow = null;
-function createDebugWindow(){
+function createDebugWindow() {
   // Create the browser window.
   debugWindow = new BrowserWindow({
     width: 350,
@@ -313,7 +316,7 @@ function createDebugWindow(){
   })
 
   ipcMain.on("fetch-debug-options", () => {
-    const options = {...debug, path: debugConfigFile};
+    const options = { ...debug, path: debugConfigFile };
     debugWindow.webContents.send("debug-options", options);
   })
 
@@ -343,17 +346,17 @@ app.on('second-instance', () => {
 });
 
 const protocolCommands = {
-  install(packId){
-    if(installer === null){
+  install(packId) {
+    if (installer === null) {
       log.debug(`Processing request to install ${packId}...`);
       openInstallWindow(packId);
-    }else{
+    } else {
       installer.focus();
       installer.webContents.send("install-pack", packId);
     }
   }
 }
-function callProtocolCommand(command, ...args){
+function callProtocolCommand(command, ...args) {
   protocolCommands[command](...args);
 }
 
@@ -365,12 +368,12 @@ if (!gotTheLock) {
     if (win) {
       if (process.platform === 'darwin') {
         app.dock.show();
-      }else{
+      } else {
         // when we reach this code, we're hitting open-url on win or linux
         // Note, this doesn't occur on macos, we have to use open-url below.
         const url = commandLine.pop();
         const command = decodeURI(url.slice("mechvibes://".length)).split(" ");
-        if(protocolCommands[command[0]]){
+        if (protocolCommands[command[0]]) {
           callProtocolCommand(...command);
         }
       }
@@ -384,7 +387,7 @@ if (!gotTheLock) {
 
   app.on("open-url", (event, url) => {
     const command = decodeURI(url.slice("mechvibes://".length)).split(" ");
-    if(protocolCommands[command[0]]){
+    if (protocolCommands[command[0]]) {
       callProtocolCommand(...command);
     }
   })
@@ -400,9 +403,9 @@ if (!gotTheLock) {
 
     log.silly("Creating main window for the first time...");
     win = createWindow(true);
-    
+
     const startup_handler = new StartupHandler(app);
-    if(!mute.is_enabled){
+    if (!mute.is_enabled) {
       iohook.start();
     }
 
@@ -410,15 +413,15 @@ if (!gotTheLock) {
     let system_mute = false;
     let system_volume_error = false;
     let sys_check_interval = setInterval(() => {
-      if(!mute.is_enabled){
+      if (!mute.is_enabled) {
         getVolume().then((v) => {
-          if(v !== volume){
+          if (v !== volume) {
             volume = v;
             win.webContents.send("system-volume-update", volume);
           }
         }).catch((err) => {
           clearInterval(sys_check_interval);
-          if(err == "" && !system_volume_error){
+          if (err == "" && !system_volume_error) {
             // this condition appears to only be hit when using ctrl+c to kill the app during development.
             system_volume_error = true;
             OnBeforeQuit();
@@ -428,13 +431,13 @@ if (!gotTheLock) {
         });
 
         getMute().then((m) => {
-          if(m !== system_mute){
+          if (m !== system_mute) {
             system_mute = m;
             win.webContents.send("system-mute-status", system_mute);
           }
         }).catch((err) => {
           clearInterval(sys_check_interval);
-          if(err == "" && !system_volume_error){
+          if (err == "" && !system_volume_error) {
             // this condition appears to only be hit when using ctrl+c to kill the app during development.
             system_volume_error = true;
             OnBeforeQuit();
@@ -455,9 +458,9 @@ if (!gotTheLock) {
       win.webContents.send("keyup", event);
     });
 
-    function createTrayIcon(){
+    function createTrayIcon() {
       // prevent dupe tray icons
-      if(tray !== null) return;
+      if (tray !== null) return;
 
       // start tray icon
       tray = new Tray(SYSTRAY_ICON);
@@ -491,7 +494,7 @@ if (!gotTheLock) {
               label: 'Custom Soundpacks',
               click: function () {
                 shell.openPath(custom_dir).then((err) => {
-                  if(err){
+                  if (err) {
                     log.error(err);
                   }
                 });
@@ -501,7 +504,7 @@ if (!gotTheLock) {
               label: 'Application Data',
               click: function () {
                 shell.openPath(user_dir).then((err) => {
-                  if(err){
+                  if (err) {
                     log.error(err);
                   }
                 });
@@ -515,9 +518,9 @@ if (!gotTheLock) {
           checked: mute.is_enabled,
           click: function () {
             mute.toggle();
-            if(!mute.is_enabled){
+            if (!mute.is_enabled) {
               iohook.start();
-            }else{
+            } else {
               iohook.stop();
             }
             win.webContents.send("mechvibes-mute-status", mute.is_enabled);
@@ -567,19 +570,19 @@ if (!gotTheLock) {
       ]);
 
       // On macOS double click doesn't work if we use tray.setContextMenu(), so we'll do it manually.
-      if(process.platform == "darwin"){ 
+      if (process.platform == "darwin") {
         // click on tray icon, show context menu
         tray.on('click', () => {
           tray.popUpContextMenu(contextMenu);
         });
-        
+
         // right click on tray icon, show the app
         tray.on("right-click", () => {
           app.dock.show();
           win.show();
           win.focus();
         })
-      }else{
+      } else {
         tray.setContextMenu(contextMenu);
         // double click on tray icon, show the app
         tray.on("double-click", () => {
@@ -590,21 +593,21 @@ if (!gotTheLock) {
     }
 
     ipcMain.on("show_tray_icon", (event, show) => {
-      if(show && tray === null){
+      if (show && tray === null) {
         createTrayIcon();
-      }else if(!show && tray !== null){
+      } else if (!show && tray !== null) {
         tray.destroy()
         tray = null;
-      }else if(!show && tray === null){
+      } else if (!show && tray === null) {
         createTrayIcon();
       }
     })
 
     ipcMain.on("electron-log", (event, message, level) => {
       const window_options = event.sender.browserWindowOptions;
-      if(window_options.name !== undefined && typeof window_options.name == "string"){
+      if (window_options.name !== undefined && typeof window_options.name == "string") {
         log.variables.sender = window_options.name
-      }else{
+      } else {
         log.variables.sender = "u/w"; // unknown window
       }
       log[level](message);
@@ -616,9 +619,9 @@ if (!gotTheLock) {
     })
 
     ipcMain.on("set-debug-options", (event, json) => {
-      if(json.enabled && !debug.enabled){
+      if (json.enabled && !debug.enabled) {
         debug.enable();
-      }else if(!json.enabled && debug.enabled){
+      } else if (!json.enabled && debug.enabled) {
         debug.disable();
       }
     })
@@ -665,9 +668,9 @@ app.on('activate', function () {
   // On macOS it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
   log.silly("App has been activated")
-  if (win === null){
+  if (win === null) {
     createWindow(true);
-  }else{
+  } else {
     // on macOS clicking the app icon in the launcher or in finder, triggers activate instead of second-instance for some reason.
     if (process.platform === 'darwin') {
       app.dock.show();
@@ -681,7 +684,7 @@ app.on('activate', function () {
 });
 
 // ensure app gets unregistered
-function OnBeforeQuit(){
+function OnBeforeQuit() {
   log.silly("Shutting down...");
   app.removeAsDefaultProtocolClient("mechvibes");
 }
